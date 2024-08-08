@@ -71,6 +71,29 @@ void classificacao_interna(char *nome_arquivo_entrada, Nomes *nome_arquivos_said
     }
 }
 
+// Faz o congelamento do vetor
+int* congela(int *vetor, int dado, int M) {
+    int vetorDeRetorno[M];
+
+    for (int i = 0; i < M; i++)
+    {
+        if(vetor[i] == dado) {
+            vetorDeRetorno[i] = dado;
+            return vetor;
+        }
+    }
+    
+}
+
+// Recebe os dados do arquivo e compara com os dados da memória
+int compara_arq_memoria(int dado, int memoria) {
+    if (dado > memoria)
+    {
+        return 1;
+    } 
+    return 0;
+}
+
 void selecao_com_substituicao(char *nome_arquivo_entrada, Nomes *nome_arquivos_saida, int M)
 {
 	//TODO: Inserir aqui o codigo do algoritmo de geracao de particoes
