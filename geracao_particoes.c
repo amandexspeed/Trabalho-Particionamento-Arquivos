@@ -10,6 +10,7 @@
 #include "geracao_particoes.h"
 #include "nomes.h"
 #include "cliente.h"
+#include "limits.h"
 
 void classificacao_interna(char *nome_arquivo_entrada, Nomes *nome_arquivos_saida, int M)
 {
@@ -68,6 +69,33 @@ void classificacao_interna(char *nome_arquivo_entrada, Nomes *nome_arquivos_said
                 fim = 1;
             }
         }
+    }
+}
+
+//Guarda no arquvio os dados do vetor e o zera
+void guarda_no_arquivo(Cliente **v, int i, FILE *p)
+{
+    int menor = procuraMenor(v, i);
+    while (menor != INT_MAX)
+    {
+        salva_cliente(v[menor], p);
+        v[menor] = cliente(INT_MAX, "");
+        menor = procuraMenor(v, i);
+    }
+}
+
+void cria_particao(char *nome_particao, Nomes *nome_arquivos_saida, Cliente **v, FILE *p, int requisita_funcao, int menor, int i)
+{
+    if ((p = fopen(nome_particao, "wb")) == NULL)
+    {
+        printf("Erro criar arquivo de saida\n");
+    }
+    else
+    {
+        if (requisita_funcao == 1)
+            guarda_no_arquivo(v, i, p);
+
+        fclose(p);
     }
 }
 
