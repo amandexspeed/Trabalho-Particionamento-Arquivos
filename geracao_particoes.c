@@ -71,31 +71,19 @@ void classificacao_interna(char *nome_arquivo_entrada, Nomes *nome_arquivos_said
     }
 }
 
-// Faz o congelamento do vetor
-int* congela(int *vetor, int dado, int M) {
-    int vetorDeRetorno[M];
-
-    for (int i = 0; i < M; i++)
-    {
-        if(vetor[i] == dado) {
-            vetorDeRetorno[i] = dado;
-            return vetor;
-        }
-    }
-    
-}
-
-// Recebe os dados do arquivo e compara com os dados da memória
+/*------Comparação do último registro com o próximo dado do arquivo------*/
+/*
+    -> Recebe o dado do arquivo e compara com o último dado inserido na partição;
+    -> Basicamente, é retornado um inteiro que indica se o dado é menor ou não;
+    -> Esse método pode ser utilizado tanto na etapa antes do congelamento que é caso do seleção com substituição,
+    quanto para inserir no reservatório no caso da seleção naturol.
+*/
 int compara_arq_memoria(int dado, int memoria) {
-    if (dado > memoria)
-    {
-        return 1;
-    } 
-    return 0;
+    return dado < memoria ? 1 : 0;
 }
 
 void selecao_com_substituicao(char *nome_arquivo_entrada, Nomes *nome_arquivos_saida, int M)
-{
+{    
 	//TODO: Inserir aqui o codigo do algoritmo de geracao de particoes
 }
 
