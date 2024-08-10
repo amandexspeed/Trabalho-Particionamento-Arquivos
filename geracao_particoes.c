@@ -71,6 +71,24 @@ void classificacao_interna(char *nome_arquivo_entrada, Nomes *nome_arquivos_said
     }
 }
 
+/*------Congelamento------*/
+/*
+    -> Recebe o vetor onde estão sendo guardados os elementos que vão ser ignorados;
+    -> Recebe o dado que vai ser congelado;
+    -> Recebe a posição e o tamanho do vetor;
+    -> Verifica se a posição não ultrapassa o tamanho máximo do vetor;
+    -> Caso seja menor, guarda no vetor, na posição indicada, o dado;
+    -> Caso não, retorna 0.
+*/
+int congela(int *vetor, int dado, int *pos, int m) {
+    if (pos < m)
+    {
+        vetor[(*pos)++] = dado;
+        return 1;
+    }
+    return 0;
+}
+
 /*------Comparação do último registro com o próximo dado do arquivo------*/
 /*
     -> Recebe o dado do arquivo e compara com o último dado inserido na partição;
