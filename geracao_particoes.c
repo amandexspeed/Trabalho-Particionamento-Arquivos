@@ -201,6 +201,7 @@ void gerir_reservatorio(Cliente **clientes, int quantidade, FILE *nome_arquivo_e
             free(clientes[i]); // Libera a memória do cliente
         }
     }
+}
 /*------Congelamento------*/
 /*
     -> Recebe o vetor onde estão sendo guardados os elementos que vão ser ignorados;
