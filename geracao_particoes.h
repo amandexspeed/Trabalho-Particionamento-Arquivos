@@ -5,6 +5,7 @@
 #ifndef GERACAO_PARTICOES_H
 #define GERACAO_PARTICOES_H
 
+#include "cliente.h"
 #include "nomes.h"
 
 // Executa o algoritmo de geracao de particoes por Classificacao Interna

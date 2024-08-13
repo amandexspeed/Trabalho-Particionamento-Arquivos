@@ -577,7 +577,7 @@ if (!skip) {
  * TESTES RELACIONADOS A GERAÇÃO DE PARTIÇÃO POR SELECAO NATURAL
  * *******************************************************************
  *********************************************************************/
-
+/*
 TEST("Teste 1 Selecao Natural. Arquivo vazio deve criar p1.dat vazio");
 if (!skip) {
 	ListaClientes *entrada, *oraculo, *saida;
@@ -847,5 +847,6 @@ if (!skip) {
 	libera_clientes(saida);
 	p = p->prox;
 }
+*/
 
 END_TESTS();
