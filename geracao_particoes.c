@@ -97,7 +97,7 @@ void guarda_no_arquivo(Cliente **v, int i, FILE *p)
   }
 }
 
-void cria_particao(char *nome_particao, Nomes *nome_arquivos_saida, Cliente **v, FILE *p, int requisita_funcao, int menor, int i)
+/*void cria_particao(char *nome_particao, Nomes *nome_arquivos_saida, Cliente **v, FILE *p, int requisita_funcao, int menor, int i)
 {
   if ((p = fopen(nome_particao, "wb")) == NULL)
   {
@@ -111,6 +111,73 @@ void cria_particao(char *nome_particao, Nomes *nome_arquivos_saida, Cliente **v,
     fclose(p);
   }
 }
+*/
+
+//Cria apenas a partição
+FILE* cria_particao(char *nome_particao,Nomes *nome_arquivos_saida)
+{
+
+  // cria arquivo de particao e faz gravacao
+  nome_particao = nome_arquivos_saida->nome;
+  nome_arquivos_saida = nome_arquivos_saida->prox;
+
+  FILE *p;
+  if ((p = fopen(nome_particao, "wb")) == NULL)
+  {
+    printf("Erro criar arquivo de saida\n");
+  }
+
+  return p;
+
+}
+
+//Despeja o que está no vetor no ponteiro p e vê se precisa criar outra partição
+FILE* cria_particao(FILE *p, char *nome_particao,Nomes *nome_arquivos_saida, Cliente **v, int i)
+{
+
+  guarda_no_arquivo(v, i, p);
+  fclose(p);
+
+  // cria arquivo de particao e faz gravacao
+  nome_particao = nome_arquivos_saida->nome;
+  nome_arquivos_saida = nome_arquivos_saida->prox;
+
+  if(nome_arquivos_saida == NULL)
+  {
+    return p;
+  }
+
+  if ((p = fopen(nome_particao, "wb")) == NULL)
+  {
+    printf("Erro criar arquivo de saida\n");
+  }
+
+  return p;
+
+}
+
+//Cria uma nova partição pra despejar a memória dentro dela
+FILE* cria_particao(char *nome_particao, Nomes *nome_arquivos_saida, Cliente **v, int i)
+{
+
+  nome_particao = nome_arquivos_saida->nome;
+  nome_arquivos_saida = nome_arquivos_saida->prox;
+
+  FILE *p;
+  if ((p = fopen(nome_particao, "wb")) == NULL)
+  {
+    printf("Erro criar arquivo de saida\n");
+  }
+  else
+  {
+      guarda_no_arquivo(v, i, p);
+      fclose(p);
+  }
+  
+  return p;
+
+}
+
 
 // carregar vetor com os M registros
 void carrega_registros(Cliente *v[], FILE *arq, int M)
@@ -128,7 +195,7 @@ void carrega_registros(Cliente *v[], FILE *arq, int M)
   if (i != M)
     M = i;
 }
-
+//Para seleção natural
 int menor_valor(Cliente **clientes, int quantidade)
 {
     //Verificação se a quantidade é invalida ou vetor de clientes vazio.
@@ -146,7 +213,32 @@ int menor_valor(Cliente **clientes, int quantidade)
     return indice_menor;
 }
 
-void gerir_reservatorio(Cliente **clientes, int quantidade, FILE *nome_arquivo_entrada, FILE *nome_arquivo_saida) 
+//Para seleção com substituição
+int menor_valor(Cliente **clientes, int quantidadeClientes, int congelados[], int quantidadeCong)
+{
+    //Verificação se a quantidade é invalida ou vetor de clientes vazio.
+    if (quantidadeClientes <= 0 || clientes == NULL) {
+        return -1;
+    }
+
+    //Usa-se o primeiro indice do vetor de clientes para haver comparação
+    int indice_menor = 0;
+
+    for (int i = 1; i < quantidadeClientes; i++) {
+        if (clientes[i] != NULL && clientes[i]->cod_cliente < clientes[indice_menor]->cod_cliente) {
+            //Verificação se o indice está congelado
+            
+                if(!verifica_congelado(congelados, quantidadeCong, i))
+                    
+                    indice_menor = i;
+           
+        }
+    }
+    return indice_menor;
+
+}
+
+void gerir_reservatorio(Cliente **clientes, int quantidade, FILE *arquivo_entrada, FILE *arquivo_saida) 
 {
   // TODO: Inserir aqui o codigo do algoritmo de geracao de particoes
 
@@ -162,10 +254,10 @@ void gerir_reservatorio(Cliente **clientes, int quantidade, FILE *nome_arquivo_e
         }
 
         // Salva o cliente de menor valor no arquivo de saída
-        salva_cliente(clientes[indice_menor], nome_arquivo_saida);
+        salva_cliente(clientes[indice_menor], arquivo_saida);
 
         //Lê o próximo cliente do arquivo principal (levando em consideração que o curso já passou dos clientes lidos)
-        novo_cliente = le_cliente(nome_arquivo_entrada);
+        novo_cliente = le_cliente(arquivo_entrada);
 
         //Se não houver mais clientes no arquivo, interrompe o loop
         if (novo_cliente == NULL) { 
@@ -197,7 +289,7 @@ void gerir_reservatorio(Cliente **clientes, int quantidade, FILE *nome_arquivo_e
     // Salva os clientes restantes no arquivo de saída
     for (i = 0; i < quantidade; i++) {
         if (clientes[i] != NULL) {
-            salva_cliente(clientes[i], nome_arquivo_saida);
+            salva_cliente(clientes[i], arquivo_saida);
             free(clientes[i]); // Libera a memória do cliente
         }
     }
@@ -205,16 +297,16 @@ void gerir_reservatorio(Cliente **clientes, int quantidade, FILE *nome_arquivo_e
 /*------Congelamento------*/
 /*
     -> Recebe o vetor onde estão sendo guardados os elementos que vão ser ignorados;
-    -> Recebe o dado que vai ser congelado;
+    -> Recebe a posição do dado que vai ser congelado;
     -> Recebe a posição e o tamanho do vetor;
     -> Verifica se a posição não ultrapassa o tamanho máximo do vetor;
     -> Caso seja menor, guarda no vetor, na posição indicada, o dado;
     -> Caso não, retorna 0.
 */
-int congela(int *vetor, int dado, int *tam, int max) {
+int congela(int *vetor, int pos, int *tam, int max) {
     if (tam < max)
     {
-        vetor[(*tam)++] = dado;
+        vetor[(*tam)++] = pos;
         return 1;
     }
     return 0;
@@ -250,14 +342,80 @@ int compara_arq_memoria(int dado, int memoria) {
 
 void selecao_com_substituicao(char *nome_arquivo_entrada, Nomes *nome_arquivos_saida, int M)
 {    
-    int dado, memoria;
-    int *vetor, tam;
-    vetor = (int*) malloc(sizeof(int)*M);
-    // uso
-    if (compara_arq_memoria(dado, memoria))
-    {
-        congela(vetor, dado, &tam, M);
-    }
+  FILE *arqEnt, *arqPart;   // declara ponteiro para arquivo
+  char *nome_particao = nome_arquivos_saida -> nome;
+
+
+  // abre arquivo para leitura
+  if ((arqEnt = fopen(nome_arquivo_entrada, "rb")) == NULL)
+  {
+    printf("Erro ao abrir arquivo de entrada\n");
+  }
+  else
+  {
+    Cliente ** vetorCliente = (Cliente**) malloc(sizeof(Cliente*)*M);
+    carrega_registros(vetorCliente, arqEnt, M);
+
+    Cliente *dadoArq = le_cliente(arqEnt);
+    Cliente *memoria = cliente(INT_MAX, "");
+
+    int *vetorCong, posCong = 0;
+    vetorCong = (int*) malloc(sizeof(int)*M);
+
+
+    while(dadoArq != NULL){
+
+      int posicaoMenor = menor_valor(vetorCliente, M, vetorCong, posCong);
+
+      salva_cliente(vetorCliente[posicaoMenor], arqPart);
+      memoria = vetorCliente[posicaoMenor];
+      vetorCliente[posicaoMenor] = dadoArq;
+
+      if (compara_arq_memoria(dadoArq ->cod_cliente, memoria->cod_cliente))
+      {
+          if(congela(vetorCong, posicaoMenor, &posCong, M)){
+
+            if(posCong==M){
+
+              fclose(arqPart);
+              arqPart = cria_particao(nome_particao, nome_arquivos_saida);
+              if(arqPart==NULL){
+                break;
+              }
+              posCong = 0;
+
+            }
+
+          }else{
+
+            printf("Erro ao congelar\n");
+
+          }
+      }
+
+      dadoArq = le_cliente(arqEnt);
+      if(dadoArq == NULL){
+
+        if(posCong==0){
+
+          break;
+
+        }
+
+        Cliente ** despejo = (Cliente**) malloc(sizeof(Cliente*)*posCong);
+
+        for(int i=0; i<posCong; i++){
+
+          despejo[i] = vetorCliente[vetorCong[i]];
+          vetorCliente[vetorCong[i]] = NULL;
+
+        }
+
+        cria_particao(arqPart , nome_particao, nome_arquivos_saida, despejo, posCong);
+
+      }
+
+  }
         
 	//TODO: Inserir aqui o codigo do algoritmo de geracao de particoes
 }
