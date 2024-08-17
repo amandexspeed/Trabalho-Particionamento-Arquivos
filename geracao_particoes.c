@@ -116,7 +116,7 @@ int menor_valor(Cliente **clientes, int quantidade)
 void guarda_no_arquivo(Cliente **v, int i, FILE *p)
 {
   int menor = menor_valor(v, i);
-  while (menor != -1)
+  for(int j = 0; j < i; j++)
   {
     salva_cliente(v[menor], p);
     v[menor] = cliente(INT_MAX, "");
@@ -211,7 +211,7 @@ FILE* cria_particao_nova(char *nome_particao, Nomes *nome_arquivos_saida, Client
 
 
 // carregar vetor com os M registros
-void carrega_registros(Cliente **v, FILE *arq, int M)
+int carrega_registros(Cliente **v, FILE *arq, int M)
 {
   Cliente *cin = le_cliente(arq);
   int i = 0;
@@ -222,8 +222,8 @@ void carrega_registros(Cliente **v, FILE *arq, int M)
     i++;
   }
 
-  if (i != M)
-    M = i;
+  return i;
+
 }
 
 
@@ -363,7 +363,14 @@ void selecao_com_substituicao(char *nome_arquivo_entrada, Nomes *nome_arquivos_s
   else
   {
     Cliente ** vetorCliente = (Cliente**) malloc(sizeof(Cliente*)*M);
-    carrega_registros(vetorCliente, arqEnt, M);
+    int carregados = carrega_registros(vetorCliente, arqEnt, M);
+
+    if(carregados<M){
+
+      fclose(arqEnt);
+      cria_particao_nova(nome_particao, nome_arquivos_saida, vetorCliente, carregados);
+
+    }
 
     Cliente *dadoArq = le_cliente(arqEnt);
     Cliente *memoria = cliente(INT_MAX, "");
@@ -405,29 +412,39 @@ void selecao_com_substituicao(char *nome_arquivo_entrada, Nomes *nome_arquivos_s
       dadoArq = le_cliente(arqEnt);
       if(dadoArq == NULL){
 
+        Cliente ** despejo = NULL;
+        int quantReg;
+
         if(posCong==0){
 
-          
-          break;
+          quantReg = M - 1;
+          despejo = (Cliente**) malloc(sizeof(Cliente*)*quantReg);
+          int j=0;
+          for(int i=0; i<M; i++){
+            if(i!=posicaoMenor)
+              despejo[j++] = vetorCliente[i];
+
+          }
 
         }
+        else{
 
-        Cliente ** despejo = (Cliente**) malloc(sizeof(Cliente*)*posCong);
+          quantReg = posCong;
+          despejo = (Cliente**) malloc(sizeof(Cliente*)*posCong);
 
-        for(int i=0; i<posCong; i++){
+          for(int i=0; i<posCong; i++){
 
-          despejo[i] = vetorCliente[vetorCong[i]];
-          vetorCliente[vetorCong[i]] = NULL;
+            despejo[i] = vetorCliente[vetorCong[i]];
+            vetorCliente[vetorCong[i]] = NULL;
 
+          }
         }
 
-        termina_e_cria_particao(arqPart , nome_particao, nome_arquivos_saida, despejo, posCong);
+        termina_e_cria_particao(arqPart , nome_particao, nome_arquivos_saida, despejo, quantReg);
 
       }
 
-  }
-        
-	//TODO: Inserir aqui o codigo do algoritmo de geracao de particoes
+    }
   }
 }
 
