@@ -33,13 +33,9 @@ void selecao_natural(char *nome_arquivo_entrada, Nomes *nome_arquivos_saida, int
 
 void guarda_no_arquivo(Cliente **v, int i, FILE *p);
 
-void cria_particao(char *nome_particao, Nomes *nome_arquivos_saida, Cliente **v, FILE *p, int requisita_funcao, int menor, int i);
-
-void carrega_registros(Cliente *v[], FILE *arq, int M);
-
 int menor_valor(Cliente *clientes[], int quantidade);
 
-void gerir_reservatorio(Cliente *clientes[], FILE *nome_arquivo_entrada, FILE *nome_arquivo_saida, FILE *reservatorio, int M);
+
 
 int congela(int *vetor, int dado, int *tam, int max);
 
