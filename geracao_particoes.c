@@ -147,8 +147,8 @@ FILE* cria_particao(char *nome_particao,Nomes *nome_arquivos_saida)
 {
 
   // cria arquivo de particao e faz gravacao
-  nome_particao = nome_arquivos_saida->nome;
   nome_arquivos_saida = nome_arquivos_saida->prox;
+  nome_particao = nome_arquivos_saida->nome;
 
   FILE *p = NULL;
   if(nome_particao!=NULL)
@@ -354,7 +354,6 @@ void selecao_com_substituicao(char *nome_arquivo_entrada, Nomes *nome_arquivos_s
   FILE *arqEnt, *arqPart;   // declara ponteiro para arquivo
   char *nome_particao = nome_arquivos_saida -> nome;
 
-
   // abre arquivo para leitura
   if ((arqEnt = fopen(nome_arquivo_entrada, "rb")) == NULL)
   {
@@ -365,85 +364,92 @@ void selecao_com_substituicao(char *nome_arquivo_entrada, Nomes *nome_arquivos_s
     Cliente ** vetorCliente = (Cliente**) malloc(sizeof(Cliente*)*M);
     int carregados = carrega_registros(vetorCliente, arqEnt, M);
 
-    if(carregados<M){
-
-      fclose(arqEnt);
-      cria_particao_nova(nome_particao, nome_arquivos_saida, vetorCliente, carregados);
-
-    }
-
     Cliente *dadoArq = le_cliente(arqEnt);
     Cliente *memoria = cliente(INT_MAX, "");
 
     int *vetorCong, posCong = 0;
     vetorCong = (int*) malloc(sizeof(int)*M);
 
+    if(dadoArq==NULL){
 
-    while(dadoArq != NULL){
+      fclose(arqEnt);
+      cria_particao_nova(nome_particao, nome_arquivos_saida, vetorCliente, carregados);
+      return;
+    }
 
-      int posicaoMenor = menor_valor_cong(vetorCliente, M, vetorCong, posCong);
+    if ((arqEnt = fopen(nome_arquivo_entrada, "rb")) == NULL)
+    {
+      printf("Erro ao abrir arquivo de entrada\n");
+    }
+    else
+    {
 
-      salva_cliente(vetorCliente[posicaoMenor], arqPart);
-      memoria = vetorCliente[posicaoMenor];
-      vetorCliente[posicaoMenor] = dadoArq;
+      while(dadoArq != NULL){
+        
+        int posicaoMenor = menor_valor_cong(vetorCliente, M, vetorCong, posCong);
 
-      if (compara_arq_memoria(dadoArq ->cod_cliente, memoria->cod_cliente))
-      {
-          if(congela(vetorCong, posicaoMenor, &posCong, M)){
+        memoria = vetorCliente[posicaoMenor];
+        salva_cliente(memoria, arqPart);
+        vetorCliente[posicaoMenor] = dadoArq;
 
-            if(posCong==M){
+        if (compara_arq_memoria(dadoArq ->cod_cliente, memoria->cod_cliente))
+        {
+            if(congela(vetorCong, posicaoMenor, &posCong, M)){
 
-              fclose(arqPart);
-              arqPart = cria_particao(nome_particao, nome_arquivos_saida);
-              if(arqPart==NULL){
-                break;
+              if(posCong==M-1){
+
+                fclose(arqPart);
+                arqPart = cria_particao(nome_particao, nome_arquivos_saida);
+                posCong = 0;
+                if(arqPart==NULL){
+                  break;
+                }
+
               }
-              posCong = 0;
+
+            }else{
+
+              printf("Erro ao congelar\n");
+
+            }
+        }
+
+        dadoArq = le_cliente(arqEnt);
+        if(dadoArq == NULL){
+
+          Cliente ** despejo = NULL;
+          int quantReg;
+
+          if(posCong==0){
+
+            quantReg = M - 1;
+            despejo = (Cliente**) malloc(sizeof(Cliente*)*quantReg);
+            int j=0;
+            for(int i=0; i<M; i++){
+              if(i!=posicaoMenor)
+                despejo[j++] = vetorCliente[i];
 
             }
 
-          }else{
-
-            printf("Erro ao congelar\n");
-
           }
-      }
+          else{
 
-      dadoArq = le_cliente(arqEnt);
-      if(dadoArq == NULL){
+            quantReg = posCong;
+            despejo = (Cliente**) malloc(sizeof(Cliente*)*posCong);
 
-        Cliente ** despejo = NULL;
-        int quantReg;
+            for(int i=0; i<posCong; i++){
 
-        if(posCong==0){
+              despejo[i] = vetorCliente[vetorCong[i]];
+              vetorCliente[vetorCong[i]] = NULL;
 
-          quantReg = M - 1;
-          despejo = (Cliente**) malloc(sizeof(Cliente*)*quantReg);
-          int j=0;
-          for(int i=0; i<M; i++){
-            if(i!=posicaoMenor)
-              despejo[j++] = vetorCliente[i];
-
+            }
           }
+
+          termina_e_cria_particao(arqPart , nome_particao, nome_arquivos_saida, despejo, quantReg);
 
         }
-        else{
-
-          quantReg = posCong;
-          despejo = (Cliente**) malloc(sizeof(Cliente*)*posCong);
-
-          for(int i=0; i<posCong; i++){
-
-            despejo[i] = vetorCliente[vetorCong[i]];
-            vetorCliente[vetorCong[i]] = NULL;
-
-          }
-        }
-
-        termina_e_cria_particao(arqPart , nome_particao, nome_arquivos_saida, despejo, quantReg);
 
       }
-
     }
   }
 }
