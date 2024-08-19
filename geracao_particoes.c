@@ -107,9 +107,13 @@ int menor_valor(Cliente *clientes[], int quantidade)
     int indice_menor = 0;
     if(clientes != NULL)
     for (int i = 1; i < quantidade; i++) {
-        if (clientes[i] != NULL && clientes[i]->cod_cliente < clientes[indice_menor]->cod_cliente) {
-            indice_menor = i;
-        }
+      if(clientes[i] == NULL)
+      {
+        break;
+      }
+      if (clientes[i]->cod_cliente < clientes[indice_menor]->cod_cliente) {
+          indice_menor = i;
+      }
     }
     return indice_menor;
 }
@@ -121,7 +125,11 @@ void guarda_no_arquivo(Cliente *v[], int i, FILE *p)
   for(int j = 0; j < i; j++)
   {
     salva_cliente(v[menor], p);
-    v[menor] = cliente(INT_MAX, "");
+    if(v[menor] == NULL)
+    {
+      break;
+    }
+    v[menor] -> cod_cliente = INT_MAX;
     menor = menor_valor(v, i);
   }
 }
@@ -153,8 +161,6 @@ FILE* cria_particao(char *nome_particao,Nomes *nome_arquivos_saida)
   {
     return NULL;
   }
-  
-  nome_arquivos_saida = nome_arquivos_saida->prox;
   nome_particao = nome_arquivos_saida->nome;
 
   FILE *p = NULL;
@@ -163,7 +169,7 @@ FILE* cria_particao(char *nome_particao,Nomes *nome_arquivos_saida)
     {
       printf("Erro criar arquivo de saida\n");
     }
-
+  nome_arquivos_saida = nome_arquivos_saida->prox;
   return p;
 
 }
@@ -180,13 +186,14 @@ FILE* termina_e_cria_particao(FILE *p, char *nome_particao, Nomes *nome_arquivos
   {
     return NULL;
   }
-  nome_arquivos_saida = nome_arquivos_saida->prox;
-  nome_particao = nome_arquivos_saida->nome;
 
   if(nome_arquivos_saida == NULL)
   {
     return NULL;
   }
+
+  nome_particao = nome_arquivos_saida->nome;
+  nome_arquivos_saida = nome_arquivos_saida->prox;
 
   if ((p = fopen(nome_particao, "wb")) == NULL)
   {
@@ -200,15 +207,13 @@ FILE* termina_e_cria_particao(FILE *p, char *nome_particao, Nomes *nome_arquivos
 //Cria uma nova partição pra despejar a memória dentro dela
 FILE* cria_particao_nova(char *nome_particao, Nomes *nome_arquivos_saida, Cliente *v[], int i)
 {
-  if(nome_arquivos_saida != NULL)
-  {
   // cria arquivo de particao e faz gravacao
-    nome_arquivos_saida = nome_arquivos_saida->prox;
     if(nome_arquivos_saida != NULL)
     {
       nome_particao = nome_arquivos_saida->nome;
+      nome_arquivos_saida = nome_arquivos_saida->prox;
     }
-  }
+  
 
   FILE *p = NULL;
   if(nome_particao!=NULL){
@@ -227,23 +232,25 @@ FILE* cria_particao_nova(char *nome_particao, Nomes *nome_arquivos_saida, Client
 
 }
 
-
 // carregar vetor com os M registros
 int carrega_registros(Cliente *v[], FILE *arq, int M)
 {
-  Cliente *cin = le_cliente(arq);
+  Cliente *cin = NULL;
   int i = 0;
   while (!feof(arq) && i < M)
   {
-    v[i] = cin;
     cin = le_cliente(arq);
+    v[i] = cin;
     i++;
+    
   }
+
+  if(i<M)
+    i = i-1; //Pra compensar a leitura do nulo
 
   return i;
 
 }
-
 
 //Para seleção com substituição
 int menor_valor_cong(Cliente *clientes[], int quantidadeClientes, int congelados[], int quantidadeCong)
@@ -254,7 +261,12 @@ int menor_valor_cong(Cliente *clientes[], int quantidadeClientes, int congelados
     }
 
     //Usa-se o primeiro indice do vetor de clientes para haver comparação
-    int indice_menor = 0;
+    int indice_menor = clientes[0]<clientes[1] ? 0 : 1;
+    if(verifica_congelado(congelados, &quantidadeCong, indice_menor))
+    {
+        indice_menor = indice_menor == 0 ? 1 : 0;
+    }
+
 
     for (int i = 1; i < quantidadeClientes; i++) {
         if (clientes[i] != NULL && clientes[i]->cod_cliente < clientes[indice_menor]->cod_cliente) {
@@ -293,11 +305,12 @@ void gerir_reservatorio(Cliente *clientes[], FILE *nome_arquivo_entrada, FILE *n
             clientes[indice_menor] = le_cliente(nome_arquivo_entrada);
 
             //Lógica para guardar no reservatório
-            if (clientes[indice_menor]->cod_cliente < auxiliar->cod_cliente && capacidade_reservatorio < M-1) {
-                    salva_cliente(clientes[indice_menor], reservatorio);
-                    clientes[indice_menor] = le_cliente(nome_arquivo_entrada); //Faz a leitura do próximo cliente no arquivo de entrada
-                    capacidade_reservatorio++;
-            }
+            if(clientes[indice_menor]!=NULL)
+              if (clientes[indice_menor]->cod_cliente < auxiliar->cod_cliente && capacidade_reservatorio < M-1) {
+                      salva_cliente(clientes[indice_menor], reservatorio);
+                      clientes[indice_menor] = le_cliente(nome_arquivo_entrada); //Faz a leitura do próximo cliente no arquivo de entrada
+                      capacidade_reservatorio++;
+              }
 
             //Se o reservatório chegar ao seu limite termina o loop da lógica do reservatório
             if (capacidade_reservatorio == M - 1){
