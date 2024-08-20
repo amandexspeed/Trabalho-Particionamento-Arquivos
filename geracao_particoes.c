@@ -96,17 +96,17 @@ int verifica_congelado(int vetor[], int *tam, int cod_atual) {
 }
 
 //Para seleção natural
-int menor_valor(Cliente *clientes[], int quantidade)
+int menor_valor(Cliente *clientes[], int M)
 {
-    //Verificação se a quantidade é invalida ou vetor de clientes vazio.
-    if (quantidade <= 0 || clientes == NULL) {
+  //Verificação se a quantidade é invalida ou vetor de clientes vazio.
+    if (M <= 0 || clientes == NULL) {
         return -1;
     }
 
     //Usa-se o primeiro indice do vetor de clientes para haver comparação
     int indice_menor = 0;
     if(clientes != NULL)
-    for (int i = 1; i < quantidade; i++) {
+    for (int i = 1; i < M; i++) {
       if(clientes[i] == NULL)
       {
         break;
@@ -116,6 +116,19 @@ int menor_valor(Cliente *clientes[], int quantidade)
       }
     }
     return indice_menor;
+}
+
+void bubblesort(Cliente **clientes, int M) {
+    int i, j;
+    for (i = 0; i < M - 1; i++) {
+        for (j = 0; j < M - i - 1; j++) {
+            if (clientes[j]->cod_cliente > clientes[j + 1]->cod_cliente) {
+                Cliente *temp = clientes[j];
+                clientes[j] = clientes[j + 1];
+                clientes[j + 1] = temp;
+            }
+        }
+    }
 }
 
 // Guarda no arquvio os dados do vetor e o zera
@@ -142,24 +155,6 @@ void guarda_no_arquivo(Cliente *v[], int i, FILE *p)
   }
 
 }
-
-/*void cria_particao(char *nome_particao, Nomes *nome_arquivos_saida, Cliente **v, FILE *p, int requisita_funcao, int menor, int i)
-{
-  if ((p = fopen(nome_particao, "wb")) == NULL)
-  {
-    printf("Erro criar arquivo de saida\n");
-  }
-  else
-  {
-    if (requisita_funcao == 1)
-      guarda_no_arquivo(v, i, p);
-
-    fclose(p);
-  }
-}
-*/
-
-
 
 //Cria apenas a partição
 FILE* cria_particao(char *nome_particao,Nomes *nome_arquivos_saida)
@@ -283,77 +278,6 @@ int menor_valor_cong(Cliente *clientes[], int quantidadeClientes, int congelados
     return indice_menor;
 
 }
-//Atualização seleção natural
-void gerir_reservatorio(Cliente *clientes[], FILE *nome_arquivo_entrada, FILE *nome_arquivo_saida, FILE *reservatorio, int M, Nomes **nome_arquivos_saida) 
-{
-    int capacidade_reservatorio = 0;
-    int i;
-    Cliente *auxiliar;
-    while (nome_arquivos_saida != NULL) {
-        while (1) {
-            // Encontra o índice do menor cliente no vetor novo_cliente
-            int indice_menor = menor_valor(clientes, M);
-            
-            if (indice_menor == -1) {
-                break; // Se o índice for inválido, interrompe o loop
-            }
-
-            // Salva o cliente de menor valor no arquivo de saída
-            salva_cliente(clientes[indice_menor], nome_arquivo_saida);
-
-            auxiliar = clientes[indice_menor];
-
-            //Lê o próximo cliente do arquivo principal
-            clientes[indice_menor] = le_cliente(nome_arquivo_entrada);
-
-            //Lógica para guardar no reservatório
-            if(clientes[indice_menor]!=NULL)
-              if (clientes[indice_menor]->cod_cliente < auxiliar->cod_cliente && capacidade_reservatorio < M-1) {
-                      salva_cliente(clientes[indice_menor], reservatorio);
-                      clientes[indice_menor] = le_cliente(nome_arquivo_entrada); //Faz a leitura do próximo cliente no arquivo de entrada
-                      capacidade_reservatorio++;
-              }
-
-            //Se o reservatório chegar ao seu limite termina o loop da lógica do reservatório
-            if (capacidade_reservatorio == M - 1){
-                break;
-            }
-        }
-
-        // Aplicação do bubblesort para organizar os clientes que estão na memória antes de serem colocados na partição
-        for (i = 0; i < M - 1; i++) {
-            for (int j = i + 1; j < M; j++) {
-                if (clientes[i] != NULL && clientes[j] != NULL && 
-                    clientes[i]->cod_cliente > clientes[j]->cod_cliente) {
-                    // Troca os clientes de posição
-                    Cliente *temp = clientes[i];
-                    clientes[i] = clientes[j];
-                    clientes[j] = temp;
-                }
-            }
-        }
-
-        // Guarda os clientes no arquivo de saída
-        guarda_no_arquivo(clientes, M, nome_arquivo_saida);
-
-        //Fecha o atual arquivo de saida
-        fclose(nome_arquivo_saida);
-
-        // Muda o nome da partição para a próxima partição
-        *nome_arquivos_saida = (*nome_arquivos_saida)->prox;
-
-        //Carrega o próximo arquivo de saída
-        nome_arquivo_saida = fopen((*nome_arquivos_saida)->nome, "wb");
-
-        // Carregar registros do reservatório
-        rewind(reservatorio); //Como o cursor foi andando conforme foi sendo escrito, é necessário voltar
-        carrega_registros(clientes, reservatorio, M);
-
-        // Limpa o reservatório para ser usado novamente
-        freopen("reservatorio.dat", "wb+", reservatorio);
-    }
-}
-
 
 /*------Congelamento------*/
 /*
@@ -500,29 +424,128 @@ void selecao_com_substituicao(char *nome_arquivo_entrada, Nomes *nome_arquivos_s
 
 void selecao_natural(char *nome_arquivo_entrada, Nomes *nome_arquivos_saida, int M, int n)
 {
-	  Cliente *clientes[M];
-    FILE * reservatorio = fopen("reservatorio.dat", "wb+");
-    FILE *entrada = fopen(nome_arquivo_entrada, "rb");
-    FILE *saida = fopen(nome_arquivos_saida->nome, "wb");
-    
+  Cliente **clientes = (Cliente**) malloc(sizeof(Cliente*)*M); //Lista de ponteiros de clientes.
+  char *nome_arquivo_saida = nome_arquivos_saida->nome; //Nome do arquivo de saída, passado como parametro.
 
-    if (reservatorio == NULL || entrada == NULL) {
-        printf("Erro ao abrir arquivos.\n");
-        return;
-    }
+  FILE *entrada = fopen(nome_arquivo_entrada, "rb"); //Abertura para leitura binária do arquivo de entrada.
+  FILE *saida = fopen(nome_arquivo_saida, "wb"); //Abertura para escrita binária no arquivo de saída.
+  FILE *reservatorio = fopen("reservatorio.dat", "wb+"); //Abertura para escrita binária no arquivo de saída e sempre apagando quando for escrever.
 
-    int carregados = carrega_registros(clientes, entrada, M);
-
-    if(carregados<M){
-
-      fclose(entrada);
-      cria_particao_nova(nome_arquivos_saida->nome, nome_arquivos_saida, clientes, carregados);
+  //Verificação se os clientes ou os arquivos são nulos.
+  if(clientes == NULL || entrada == NULL ||  saida == NULL){
+      printf("Erro ao alocar memória");
       return;
-    }
+  }
 
-    gerir_reservatorio(clientes, entrada, saida, reservatorio, n, &nome_arquivos_saida);
+  //Definição do tamanho do reservatório
+  int tamanhoReservatorio = 0;
 
-    fclose(reservatorio);
-    fclose(entrada);
+  //Variável de controle para fazer a leitura dos clientes e guarda-los no vetor de ponteiros de clientes até chegar no limite de memória.
+  int i = 0;
+  while(i < M && (clientes[i] = le_cliente(entrada)) != NULL)
+  {
+    i++;
+  }
+
+  //Ajuste no limite de memória para ser compatível com a quantidade de clientes, caso estes sejam menores que o limite.
+  M = i;
+
+  //Loop onde irá ocorrer todo o processo de seleção natural.
+  while(1)
+  {
+      int menor = -1; //É definido -1 para caso de falha, pois se falhar em pegar o menor valor, então permanecerá no caso de falha.
+        
+        //Loop para fazer a verificação se todos os clientes forem NULL, ele encontre algum cliente que satisfaça a condição, prossegue.
+        for(int j = 0; j < M; j++){
+            if(clientes[j] != NULL){
+                menor = j;
+                break;
+            }
+        }
+
+        //Caso ele falhe no primeiro loop, o loop principal irá ser encerrado.
+        if(menor == -1){
+            break;
+        }
+
+        //Verificação se alguma casa em específica é NULL e compara os códigos de clientes na casa atual do loop com o código do menor cliente até então, assim, definindo o menor.
+        for(int j = menor + 1; j < M; j++){
+            if(clientes[j] != NULL && clientes[j]->cod_cliente < clientes[menor]->cod_cliente)
+                menor = j;
+        }
+
+      //Chave que irá receber o código do menor cliente.
+      int key = clientes[menor]->cod_cliente;
+
+      //Guarda o cliente com o menor código na partição de saída.
+      salva_cliente(clientes[menor], saida);
+
+      //Como key já possui o valor do menor código no vetor de clientes, e o cliente já foi guardado na partição de saída, então, é dado um free neste cliente.
+      free(clientes[menor]);
+
+      //É lido o próximo cliente e guardado na casa do antigo menor.
+      clientes[menor] = le_cliente(entrada);
+
+      //Loop para fazer o controle do reservatório
+      while(clientes[menor] != NULL && clientes[menor]->cod_cliente < key)
+      {
+        salva_cliente(clientes[menor], reservatorio);
+        tamanhoReservatorio++;
+
+        if(tamanhoReservatorio == n)
+        {
+          break;
+        }
+        free(clientes[menor]);
+        clientes[menor] = le_cliente(entrada);
+      }
+
+      //Caso o tamanho do reservatório seja igual ao número de registros.
+      if(tamanhoReservatorio == n)
+      {
+        //É aplicado um bubblesort nos que estão ainda na memória.
+        bubblesort(clientes, M);
+
+        //É salvo o restante na partição de saída.
+        for(i = 1; i < M; i++)
+        {
+          salva_cliente(clientes[i], saida);
+          free(clientes[i]);
+        }
+
+        //Fecha o arquivo de saída
+        fclose(saida);
+        //Fecha o reservatório
+        fclose(reservatorio);
+
+        //Abre o reservatório para que seja puxado os clientes que estão nele para a memória.
+        reservatorio = fopen("reservatorio.dat", "rb+");
+
+        i = 0;
+        while(i < M && (clientes[i] = le_cliente(reservatorio)) != NULL)
+        {
+          i++;
+        }
+        //Atualiza o tamanho da memória com o do reservatório para a próxima chamada do loop.
+        M = tamanhoReservatorio;
+
+        //Fecha o reservatório
+        fclose(reservatorio);
+
+        //Abre novamente o reservatório porém no modo de leitura e escrita, onde ele irá apagar os dados que estão no arquivo, de modo que seja possível usa-lo novamente.
+        reservatorio = fopen("reservatorio.dat", "wb+");
+        //Atualização do tamanho do reservatório
+        tamanhoReservatorio = 0;
+
+        //Muda para o próximo arquivo de saída (partição).
+        nome_arquivos_saida = nome_arquivos_saida->prox;
+        nome_arquivo_saida = nome_arquivos_saida->nome;
+        //Abre para a nova partição para saida.
+        saida = fopen(nome_arquivo_saida, "wb");
+      }
+  }
+  fclose(entrada);
+  fclose(reservatorio);
+  fclose(saida);
 }
 
