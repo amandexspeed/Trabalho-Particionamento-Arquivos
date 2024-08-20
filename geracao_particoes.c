@@ -121,17 +121,26 @@ int menor_valor(Cliente *clientes[], int quantidade)
 // Guarda no arquvio os dados do vetor e o zera
 void guarda_no_arquivo(Cliente *v[], int i, FILE *p)
 {
+  int j = 0;
   int menor = menor_valor(v, i);
-  for(int j = 0; j < i; j++)
+  while (j<i)
   {
     salva_cliente(v[menor], p);
-    if(v[menor] == NULL)
+    if(v[menor]->cod_cliente == INT_MAX)
     {
       break;
     }
     v[menor] -> cod_cliente = INT_MAX;
     menor = menor_valor(v, i);
+    j++;
+    if(j == i)
+    {
+      if (v[menor]->cod_cliente != INT_MAX){
+        salva_cliente(v[menor], p);
+      }
+    }
   }
+
 }
 
 /*void cria_particao(char *nome_particao, Nomes *nome_arquivos_saida, Cliente **v, FILE *p, int requisita_funcao, int menor, int i)
@@ -162,6 +171,7 @@ FILE* cria_particao(char *nome_particao,Nomes *nome_arquivos_saida)
     return NULL;
   }
   nome_particao = nome_arquivos_saida->nome;
+  nome_arquivos_saida = nome_arquivos_saida->prox;
 
   FILE *p = NULL;
   if(nome_particao!=NULL)
@@ -169,7 +179,6 @@ FILE* cria_particao(char *nome_particao,Nomes *nome_arquivos_saida)
     {
       printf("Erro criar arquivo de saida\n");
     }
-  nome_arquivos_saida = nome_arquivos_saida->prox;
   return p;
 
 }
@@ -186,14 +195,8 @@ FILE* termina_e_cria_particao(FILE *p, char *nome_particao, Nomes *nome_arquivos
   {
     return NULL;
   }
-
-  if(nome_arquivos_saida == NULL)
-  {
-    return NULL;
-  }
-
-  nome_particao = nome_arquivos_saida->nome;
   nome_arquivos_saida = nome_arquivos_saida->prox;
+  nome_particao = nome_arquivos_saida->nome;
 
   if ((p = fopen(nome_particao, "wb")) == NULL)
   {
@@ -260,15 +263,14 @@ int menor_valor_cong(Cliente *clientes[], int quantidadeClientes, int congelados
         return -1;
     }
 
-    //Usa-se o primeiro indice do vetor de clientes para haver comparação
-    int indice_menor = clientes[0]<clientes[1] ? 0 : 1;
-    if(verifica_congelado(congelados, &quantidadeCong, indice_menor))
+    int indice_menor = 0;
+    while(verifica_congelado(congelados, &quantidadeCong, indice_menor))
     {
-        indice_menor = indice_menor == 0 ? 1 : 0;
+        indice_menor++;
     }
 
 
-    for (int i = 1; i < quantidadeClientes; i++) {
+    for (int i = indice_menor + 1; i < quantidadeClientes; i++) {
         if (clientes[i] != NULL && clientes[i]->cod_cliente < clientes[indice_menor]->cod_cliente) {
             //Verificação se o indice está congelado
             
@@ -423,6 +425,7 @@ void selecao_com_substituicao(char *nome_arquivo_entrada, Nomes *nome_arquivos_s
     int vetorCong[M], posCong = 0;
 
     arqPart = cria_particao(nome_particao, nome_arquivos_saida);
+    nome_arquivos_saida = nome_arquivos_saida->prox;
 
     if (arqPart == NULL)
     {
@@ -443,10 +446,11 @@ void selecao_com_substituicao(char *nome_arquivo_entrada, Nomes *nome_arquivos_s
         {
             if(congela(vetorCong, posicaoMenor, &posCong, M)){
 
-              if(posCong == M-1){
+              if(posCong == M){
 
                 fclose(arqPart);
                 arqPart = cria_particao(nome_particao, nome_arquivos_saida);
+                nome_arquivos_saida = nome_arquivos_saida->prox;
                 if(arqPart==NULL){
                   break;
                 }
@@ -468,7 +472,7 @@ void selecao_com_substituicao(char *nome_arquivo_entrada, Nomes *nome_arquivos_s
 
           if(posCong==0){
 
-            quantReg = M - 1;
+            quantReg = M-1;
             despejo = (Cliente**) malloc(sizeof(Cliente*)*quantReg);
             int j=0;
             for(int i=0; i<M; i++){
