@@ -472,14 +472,8 @@ void selecao_com_substituicao(char *nome_arquivo_entrada, Nomes *nome_arquivos_s
 
           if(posCong==0){
 
-            quantReg = M-1;
-            despejo = (Cliente**) malloc(sizeof(Cliente*)*quantReg);
-            int j=0;
-            for(int i=0; i<M; i++){
-              if(i!=posicaoMenor)
-                despejo[j++] = vetorCliente[i];
-
-            }
+            quantReg = M;
+            despejo = vetorCliente;
 
           }
           else{
